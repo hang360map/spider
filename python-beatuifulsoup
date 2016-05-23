@@ -1,0 +1,58 @@
+#! /home/zhuhang-xy/python/bin/python10
+#coding=utf-8
+import urllib2
+import sys
+reload(sys)
+import string
+from bs4 import BeautifulSoup
+import re
+
+INPUT_FILE = "sampleResult"
+OUTPUT_FILE = "sampleResult_has_center"
+
+
+def parse_query(query):
+    url_string = "http://10.172.178.222:8360/qrwt.htm?cache=0&dbg%20=1&dbglv=0&disable_all_tuners=checked&kw=" + urllib2.quote(query) + "&rewrite=1&&param=disable_all_tuners"
+    try:
+        url = urllib2.urlopen(url_string)
+        soup = BeautifulSoup(url.read())
+        table_set = soup.findAll('table')
+        words_set = table_set[0].findAll('tr')
+        score = 0.0
+        result_word = ""
+        for i in range(1, len(words_set)):
+            word_infos = words_set[i].findAll('td')
+            if len(word_infos) < 13:
+                continue
+            word_wei = (str)(word_infos[12])
+            word_wei = (float)(word_wei[4:len(word_wei)-5])
+            print word_wei
+            if score > word_wei:
+                continue
+            score = word_wei
+            word = (str)(word_infos[2])
+            word = word[4:len(word)-5]
+            result_word = word
+        return result_word
+    except Exception:
+        return query
+
+def chose_center_word():
+    input = open(INPUT_FILE, 'r')
+    output = open(OUTPUT_FILE, 'w')
+
+    for line in input:
+        if line.strip().strip('\n') == "":
+            continue
+        set = line.strip('\n').split("\t")
+        if len(set) != 3:
+            continue
+        temp = parse_query(set[1].strip())
+        result = set[0].strip() + '\t' + set[1].strip() + '\t' + set[2].strip("\n").strip() + '\t' + temp.strip() + '\n'
+        output.write(result)
+    input.close()
+    output.close()
+
+if __name__ == "__main__":
+    chose_center_word()
+
